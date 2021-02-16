@@ -2,14 +2,11 @@
 
 You are going to implement readers/writer locks as described in this handout. Additionally, you will implement a priority inheritance mechanism to prevent the priority inversion problem when using locks. Implemented 1- (1) Lock Deletion (2) Locking Policy (3) Wait on Locks with Priority (4) Releasing Locks (5) Using Variable Arguments 2 - Priority Inheritance
 
-CSC501 Fall 2018
+CSC501 Spring 2020
 ----------------
 
 PA3: Readers/Writer Locks with Priority Inheritance
 ---------------------------------------------------
-
-Due: December 7 2018, 11:55 PM
-------------------------------
 
 1\. Introduction
 ================
