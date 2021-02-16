@@ -1,0 +1,66 @@
+The priority inversion problem could cause that a higher-priority process needs to wait for the completion of a lower-priority process.
+
+1.1) Priority inheritance is one approach to address this issue. Please give another approach and briefly describe its idea.
+
+Ans. Priority ceiling protocol is another approach to address this issue. This protocol assigns priority to the resources at hand which are being shared between multiple processes based on the priority ceiling, i.e. the highest priority of any task. This protocol helps to avoid unbounded priority inversion and mutual deadlock due to wrong nesting of critical sections.
+
+For example, there are 3 processes A,B,C with priorities 5,10,15 respectively who are sharing a resource say, lck. Since, lck becomes the common resource here, we would assign the priority of lck equal to 15, in order for it to be acquired by the highest priority process at first followed by B and then C.
+
+2 types of priority ceiling protocol are: 
+a) Original Ceiling Priority Protocol (OCPP): A task X's priority is raised when a higher-priority task Y tries to acquire a resource that X has locked.
+
+b) Immediate Ceiling Priority Protocol (ICPP): A task's priority is immediately raised when it locks a resource. The task's priority is set to the priority ceiling of the resource, thus no task that may lock the resource is able to get scheduled. 
+
+Reference: https://en.wikipedia.org/wiki/Priority_ceiling_protocol
+
+
+1.2) Design a test case to show that your approach can address the priority inversion problem. You should compare the results that derived from the original XINU implementation (use semaphore) and that derived from your implementation (use readers/writer locks). Put your results in Lab2Answers.txt and your test case program (name it task1.c) in both ./sys and ./TMP
+
+Ans. 3 processes with priority R1(25), and R2(30) and W1(20) have been created. 
+
+Implementation using semaphore:
+a) All the three processes operate on a shared variable semaphore, sem. W1 is created and resumed, acquires sem and blocks other processes from operating on it.
+b) When R1(25) is resumed, due to its higher priority it gets scheduled but it is blocked because sem is already acquired by a lower priority process, W1.
+c) Simmilarly, when R2(30) is resumed, due to its higher priority it gets scheduled but it is blocked because sem is already acquired by a lower priority process, W1. 
+Hence, R1 and R2 cannot operate on sem, because they are blocked by a lower priority process. This leads to starvation.
+
+Result:
+Test 3: test the semaphore implementation
+-start writer C, then sleep 1s. lock granted to write (prio 20)
+  C: to acquire lock
+  C: acquired lock, sleep 10s
+-start reader A, then sleep 1s. reader A(prio 25) blocked on the lock
+  A: to acquire lock
+-start reader B, then sleep 1s. reader B(prio 30) blocked on the lock
+  B: to acquire lock
+
+Implementation using locks:
+a) All the three processes operate on a shared variable lck. W1 is created and resumed, acquires lck and blocks other processes from operating on it.
+b) When R1(25) is resumed, due to the same wait priority, it gets added to the wait queue of the lock, lck. Since, the process priority of the waiting process on the lock is more than the current process acquiring the lock, W1 inherits process of R1 and continues execution.
+c) Simmilarly, when R2(30) is resumed, since the lock is already acquired, it gets added to the wait queue as well. The process priority of the waiting process on the lock is more than the current process acquiring the lock, W1 inherits process of R2 and continues execution.  
+d) After W1 finishes execution the locks is acquired by R2 and then R1 and they are able to finish execution as well.
+This solution uses priority inheritance to address the priority inversion problem.
+
+Result:
+
+Test 3: test the priority inheritence implementation
+-start writer C, then sleep 1s. lock granted to write (prio 20)
+  C: to acquire lock
+  C: acquired lock, sleep 10s
+-start reader A, then sleep 1s. reader A(prio 25) blocked on the lock
+  A: to acquire lock
+-start reader B, then sleep 1s. reader B(prio 30) blocked on the lock
+  B: to acquire lock
+  C: to release lock
+  B: acquired lock
+  B: to release lock
+  A: acquired lock
+  A: to release lock
+
+2) Synchronization is a quite complex issue in operating systems. To show your understanding about process synchronization, you are asked to point out a potential problem in this pesudo-code: task2_sync_issue.c. Multiple reader processes can execute this code concurrently by calling reader(). You are asked to describe an issue it may cause and why it can happen. Put your answer in Lab2Answers.txt mentioned above.
+
+Ans. Some issues observed are:
+
+a) There is a high possibility that the writers may starve due to the lock being acquired by multiple readers. For example, when a reader acquires the lock, another incoming writer will have to wait for the lock to be released but the readers will be allowed. This waiting will starve the writer processes.
+
+b) The function, update_global_now() has not been defined. If it is involved in changing the global variables, then it can cause inconsistencies. For example, any change by the function on the readcount, will prevent it from keeping the right count of the readers and may even prevent it from acquiring the resource lock.
